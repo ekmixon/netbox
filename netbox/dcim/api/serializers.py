@@ -74,9 +74,7 @@ class ConnectedEndpointSerializer(serializers.ModelSerializer):
 
     @swagger_serializer_method(serializer_or_field=serializers.BooleanField)
     def get_connected_endpoint_reachable(self, obj):
-        if obj._path is not None:
-            return obj._path.is_active
-        return None
+        return obj._path.is_active if obj._path is not None else None
 
 
 #
@@ -988,7 +986,7 @@ class CableSerializer(NetBoxModelSerializer):
         """
         if side.lower() not in ['a', 'b']:
             raise ValueError("Termination side must be either A or B.")
-        termination = getattr(obj, 'termination_{}'.format(side.lower()))
+        termination = getattr(obj, f'termination_{side.lower()}')
         if termination is None:
             return None
         serializer = get_serializer_for_model(termination, prefix='Nested')

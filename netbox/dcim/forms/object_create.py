@@ -96,7 +96,11 @@ class FrontPortTemplateCreateForm(ModularComponentTemplateCreateForm):
         super().__init__(*args, **kwargs)
 
         # TODO: This needs better validation
-        if 'device_type' in self.initial or self.data.get('device_type'):
+        if 'device_type' in self.initial:
+            parent = DeviceType.objects.get(
+                pk=self.initial.get('device_type') or self.data.get('device_type')
+            )
+        elif self.data.get('device_type'):
             parent = DeviceType.objects.get(
                 pk=self.initial.get('device_type') or self.data.get('device_type')
             )
@@ -117,11 +121,12 @@ class FrontPortTemplateCreateForm(ModularComponentTemplateCreateForm):
         choices = []
         rear_ports = parent.rearporttemplates.all()
         for rear_port in rear_ports:
-            for i in range(1, rear_port.positions + 1):
-                if (rear_port.pk, i) not in occupied_port_positions:
-                    choices.append(
-                        ('{}:{}'.format(rear_port.pk, i), '{}:{}'.format(rear_port.name, i))
-                    )
+            choices.extend(
+                (f'{rear_port.pk}:{i}', f'{rear_port.name}:{i}')
+                for i in range(1, rear_port.positions + 1)
+                if (rear_port.pk, i) not in occupied_port_positions
+            )
+
         self.fields['rear_port_set'].choices = choices
 
     def get_iterative_data(self, iteration):
@@ -163,11 +168,12 @@ class FrontPortCreateForm(DeviceComponentCreateForm):
         choices = []
         rear_ports = RearPort.objects.filter(device=device)
         for rear_port in rear_ports:
-            for i in range(1, rear_port.positions + 1):
-                if (rear_port.pk, i) not in occupied_port_positions:
-                    choices.append(
-                        ('{}:{}'.format(rear_port.pk, i), '{}:{}'.format(rear_port.name, i))
-                    )
+            choices.extend(
+                (f'{rear_port.pk}:{i}', f'{rear_port.name}:{i}')
+                for i in range(1, rear_port.positions + 1)
+                if (rear_port.pk, i) not in occupied_port_positions
+            )
+
         self.fields['rear_port_set'].choices = choices
 
     def get_iterative_data(self, iteration):

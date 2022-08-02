@@ -1306,10 +1306,9 @@ class FrontPortTemplateTestCase(ViewTestCases.DeviceComponentTemplateViewTestCas
             'device_type': devicetype.pk,
             'name_pattern': 'Front Port [4-6]',
             'type': PortTypeChoices.TYPE_8P8C,
-            'rear_port_set': [
-                '{}:1'.format(rp.pk) for rp in rearports[3:6]
-            ],
+            'rear_port_set': [f'{rp.pk}:1' for rp in rearports[3:6]],
         }
+
 
         cls.bulk_edit_data = {
             'type': PortTypeChoices.TYPE_8P8C,
@@ -2252,7 +2251,7 @@ class InterfaceTestCase(ViewTestCases.DeviceComponentViewTestCase):
         }
 
         cls.csv_data = (
-            f"device,name,type,vrf.pk",
+            "device,name,type,vrf.pk",
             f"Device 1,Interface 4,1000base-t,{vrfs[0].pk}",
             f"Device 1,Interface 5,1000base-t,{vrfs[0].pk}",
             f"Device 1,Interface 6,1000base-t,{vrfs[0].pk}",
@@ -2306,12 +2305,11 @@ class FrontPortTestCase(ViewTestCases.DeviceComponentViewTestCase):
             'device': device.pk,
             'name_pattern': 'Front Port [4-6]',
             'type': PortTypeChoices.TYPE_8P8C,
-            'rear_port_set': [
-                '{}:1'.format(rp.pk) for rp in rearports[3:6]
-            ],
+            'rear_port_set': [f'{rp.pk}:1' for rp in rearports[3:6]],
             'description': 'New description',
             'tags': [t.pk for t in tags],
         }
+
 
         cls.bulk_edit_data = {
             'type': PortTypeChoices.TYPE_8P8C,

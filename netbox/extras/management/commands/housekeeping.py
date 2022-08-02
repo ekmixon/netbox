@@ -45,8 +45,9 @@ class Command(BaseCommand):
             if options['verbosity'] >= 2:
                 self.stdout.write(f"\tRetention period: {config.CHANGELOG_RETENTION} days")
                 self.stdout.write(f"\tCut-off time: {cutoff}")
-            expired_records = ObjectChange.objects.filter(time__lt=cutoff).count()
-            if expired_records:
+            if expired_records := ObjectChange.objects.filter(
+                time__lt=cutoff
+            ).count():
                 if options['verbosity']:
                     self.stdout.write(
                         f"\tDeleting {expired_records} expired records... ",
@@ -72,8 +73,9 @@ class Command(BaseCommand):
             if options['verbosity'] >= 2:
                 self.stdout.write(f"\tRetention period: {config.JOBRESULT_RETENTION} days")
                 self.stdout.write(f"\tCut-off time: {cutoff}")
-            expired_records = JobResult.objects.filter(created__lt=cutoff).count()
-            if expired_records:
+            if expired_records := JobResult.objects.filter(
+                created__lt=cutoff
+            ).count():
                 if options['verbosity']:
                     self.stdout.write(
                         f"\tDeleting {expired_records} expired records... ",
@@ -109,11 +111,14 @@ class Command(BaseCommand):
                 )
                 response.raise_for_status()
 
-                releases = []
-                for release in response.json():
-                    if 'tag_name' not in release or release.get('devrelease') or release.get('prerelease'):
-                        continue
-                    releases.append((version.parse(release['tag_name']), release.get('html_url')))
+                releases = [
+                    (version.parse(release['tag_name']), release.get('html_url'))
+                    for release in response.json()
+                    if 'tag_name' in release
+                    and not release.get('devrelease')
+                    and not release.get('prerelease')
+                ]
+
                 latest_release = max(releases)
                 if options['verbosity'] >= 2:
                     self.stdout.write(f"\tFound {len(response.json())} releases; {len(releases)} usable")
@@ -125,9 +130,8 @@ class Command(BaseCommand):
 
             except requests.exceptions.RequestException as exc:
                 self.stdout.write(f"\tRequest error: {exc}", self.style.ERROR)
-        else:
-            if options['verbosity']:
-                self.stdout.write(f"\tSkipping: RELEASE_CHECK_URL not set")
+        elif options['verbosity']:
+            self.stdout.write(f"\tSkipping: RELEASE_CHECK_URL not set")
 
         if options['verbosity']:
             self.stdout.write("Finished.", self.style.SUCCESS)

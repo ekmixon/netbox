@@ -45,11 +45,12 @@ class WebhookFilterSet(BaseFilterSet):
         ]
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(payload_url__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value) | Q(payload_url__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -65,12 +66,14 @@ class CustomFieldFilterSet(BaseFilterSet):
         fields = ['id', 'content_types', 'name', 'required', 'filter_logic', 'weight', 'description']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(label__icontains=value) |
-            Q(description__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value)
+                | Q(label__icontains=value)
+                | Q(description__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -87,13 +90,15 @@ class CustomLinkFilterSet(BaseFilterSet):
         ]
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(link_text__icontains=value) |
-            Q(link_url__icontains=value) |
-            Q(group_name__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value)
+                | Q(link_text__icontains=value)
+                | Q(link_url__icontains=value)
+                | Q(group_name__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -108,11 +113,12 @@ class ExportTemplateFilterSet(BaseFilterSet):
         fields = ['id', 'content_type', 'name', 'description']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(description__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value) | Q(description__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -129,9 +135,7 @@ class ImageAttachmentFilterSet(BaseFilterSet):
         fields = ['id', 'content_type_id', 'object_id', 'name']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(name__icontains=value)
+        return queryset.filter(name__icontains=value) if value.strip() else queryset
 
 
 class JournalEntryFilterSet(NetBoxModelFilterSet):
@@ -156,9 +160,11 @@ class JournalEntryFilterSet(NetBoxModelFilterSet):
         fields = ['id', 'assigned_object_type_id', 'assigned_object_id', 'created', 'kind']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(comments__icontains=value)
+        return (
+            queryset.filter(comments__icontains=value)
+            if value.strip()
+            else queryset
+        )
 
 
 class TagFilterSet(ChangeLoggedModelFilterSet):
@@ -178,12 +184,14 @@ class TagFilterSet(ChangeLoggedModelFilterSet):
         fields = ['id', 'name', 'slug', 'color', 'description']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(slug__icontains=value) |
-            Q(description__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value)
+                | Q(slug__icontains=value)
+                | Q(description__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
     def _content_type(self, queryset, name, values):
@@ -344,12 +352,14 @@ class ConfigContextFilterSet(ChangeLoggedModelFilterSet):
         fields = ['id', 'name', 'is_active']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(description__icontains=value) |
-            Q(data__icontains=value)
+        return (
+            queryset.filter(
+                Q(name__icontains=value)
+                | Q(description__icontains=value)
+                | Q(data__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -393,11 +403,12 @@ class ObjectChangeFilterSet(BaseFilterSet):
         ]
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(user_name__icontains=value) |
-            Q(object_repr__icontains=value)
+        return (
+            queryset.filter(
+                Q(user_name__icontains=value) | Q(object_repr__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )
 
 
@@ -424,10 +435,10 @@ class JobResultFilterSet(BaseFilterSet):
         ]
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(user__username__icontains=value)
+        return (
+            queryset.filter(Q(user__username__icontains=value))
+            if value.strip()
+            else queryset
         )
 
 
@@ -446,9 +457,10 @@ class ContentTypeFilterSet(django_filters.FilterSet):
         fields = ['id', 'app_label', 'model']
 
     def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(app_label__icontains=value) |
-            Q(model__icontains=value)
+        return (
+            queryset.filter(
+                Q(app_label__icontains=value) | Q(model__icontains=value)
+            )
+            if value.strip()
+            else queryset
         )

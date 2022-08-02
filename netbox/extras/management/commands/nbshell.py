@@ -63,9 +63,7 @@ class Command(BaseCommand):
         namespace['User'] = User
 
         # Load convenience commands
-        namespace.update({
-            'lsmodels': self._lsmodels,
-        })
+        namespace['lsmodels'] = self._lsmodels
 
         return namespace
 
@@ -87,6 +85,4 @@ class Command(BaseCommand):
             readline.set_completer(rlcompleter.Completer(namespace).complete)
             readline.parse_and_bind('tab: complete')
 
-        # Run interactive shell
-        shell = code.interact(banner=BANNER_TEXT, local=namespace)
-        return shell
+        return code.interact(banner=BANNER_TEXT, local=namespace)

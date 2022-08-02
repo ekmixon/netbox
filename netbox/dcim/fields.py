@@ -64,9 +64,7 @@ class MACAddressField(models.Field):
         return 'macaddr'
 
     def get_prep_value(self, value):
-        if not value:
-            return None
-        return str(self.to_python(value))
+        return str(self.to_python(value)) if value else None
 
 
 class WWNField(models.Field):
@@ -90,9 +88,7 @@ class WWNField(models.Field):
         return 'macaddr8'
 
     def get_prep_value(self, value):
-        if not value:
-            return None
-        return str(self.to_python(value))
+        return str(self.to_python(value)) if value else None
 
 
 class PathField(ArrayField):

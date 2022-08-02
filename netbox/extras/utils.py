@@ -10,10 +10,10 @@ def is_taggable(obj):
     """
     Return True if the instance can have Tags assigned to it; False otherwise.
     """
-    if hasattr(obj, 'tags'):
-        if issubclass(obj.tags.__class__, _TaggableManager):
-            return True
-    return False
+    return bool(
+        hasattr(obj, 'tags')
+        and issubclass(obj.tags.__class__, _TaggableManager)
+    )
 
 
 def image_upload(instance, filename):
@@ -24,12 +24,13 @@ def image_upload(instance, filename):
 
     # Rename the file to the provided name, if any. Attempt to preserve the file extension.
     extension = filename.rsplit('.')[-1].lower()
-    if instance.name and extension in ['bmp', 'gif', 'jpeg', 'jpg', 'png']:
-        filename = '.'.join([instance.name, extension])
-    elif instance.name:
-        filename = instance.name
+    if instance.name:
+        if extension in ['bmp', 'gif', 'jpeg', 'jpg', 'png']:
+            filename = '.'.join([instance.name, extension])
+        else:
+            filename = instance.name
 
-    return '{}{}_{}_{}'.format(path, instance.content_type.name, instance.object_id, filename)
+    return f'{path}{instance.content_type.name}_{instance.object_id}_{filename}'
 
 
 @deconstructible

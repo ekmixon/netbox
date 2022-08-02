@@ -462,14 +462,10 @@ class ChildDeviceCSVForm(BaseDeviceCSVForm):
     def clean(self):
         super().clean()
 
-        # Set parent_bay reverse relationship
-        device_bay = self.cleaned_data.get('device_bay')
-        if device_bay:
+        if device_bay := self.cleaned_data.get('device_bay'):
             self.instance.parent_bay = device_bay
 
-        # Inherit site and rack from parent device
-        parent = self.cleaned_data.get('parent')
-        if parent:
+        if parent := self.cleaned_data.get('parent'):
             self.instance.site = parent.site
             self.instance.rack = parent.rack
 
@@ -662,10 +658,7 @@ class InterfaceCSVForm(NetBoxModelCSVForm):
 
     def clean_enabled(self):
         # Make sure enabled is True when it's not included in the uploaded data
-        if 'enabled' not in self.data:
-            return True
-        else:
-            return self.cleaned_data['enabled']
+        return True if 'enabled' not in self.data else self.cleaned_data['enabled']
 
 
 class FrontPortCSVForm(NetBoxModelCSVForm):

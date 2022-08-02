@@ -27,4 +27,4 @@ class ScriptForm(BootstrapMixin, forms.Form):
         """
         A boolean indicating whether the form requires user input (ignore the _commit field).
         """
-        return bool(len(self.fields) > 1)
+        return len(self.fields) > 1

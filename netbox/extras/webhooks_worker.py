@@ -21,10 +21,7 @@ def eval_conditions(webhook, data):
         return True
 
     logger.debug(f'Evaluating webhook conditions: {webhook.conditions}')
-    if ConditionSet(webhook.conditions).eval(data):
-        return True
-
-    return False
+    return bool(ConditionSet(webhook.conditions).eval(data))
 
 
 @job('default')
@@ -52,7 +49,7 @@ def process_webhook(webhook, model_name, event, data, snapshots, timestamp, user
         'Content-Type': webhook.http_content_type,
     }
     try:
-        headers.update(webhook.render_headers(context))
+        headers |= webhook.render_headers(context)
     except (TemplateError, ValueError) as e:
         logger.error(f"Error parsing HTTP headers for webhook {webhook}: {e}")
         raise e
@@ -87,9 +84,7 @@ def process_webhook(webhook, model_name, event, data, snapshots, timestamp, user
 
     # Send the request
     with requests.Session() as session:
-        session.verify = webhook.ssl_verification
-        if webhook.ca_file_path:
-            session.verify = webhook.ca_file_path
+        session.verify = webhook.ca_file_path or webhook.ssl_verification
         response = session.send(prepared_request, proxies=settings.HTTP_PROXIES)
 
     if 200 <= response.status_code <= 299:

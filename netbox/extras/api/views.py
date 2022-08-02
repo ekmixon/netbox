@@ -187,7 +187,7 @@ class ReportViewSet(ViewSet):
             for report in reports:
 
                 # Attach the relevant JobResult (if any) to each Report.
-                report.result = results.get(report.full_name, None)
+                report.result = results.get(report.full_name)
                 report_list.append(report)
 
         serializer = serializers.ReportSerializer(report_list, many=True, context={
@@ -280,7 +280,7 @@ class ScriptViewSet(ViewSet):
 
         # Attach JobResult objects to each script (if any)
         for script in flat_list:
-            script.result = results.get(script.full_name, None)
+            script.result = results.get(script.full_name)
 
         serializer = serializers.ScriptSerializer(flat_list, many=True, context={'request': request})
 

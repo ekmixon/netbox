@@ -35,8 +35,7 @@ def create_cablepath(node):
     """
     from dcim.models import CablePath
 
-    cp = CablePath.from_origin(node)
-    if cp:
+    if cp := CablePath.from_origin(node):
         cp.save()
 
 

@@ -112,9 +112,11 @@ class BulkDisconnectView(GetReturnURLMixin, ObjectPermissionRequiredMixin, View)
                         obj.cable.delete()
                         count += 1
 
-                messages.success(request, "Disconnected {} {}".format(
-                    count, self.queryset.model._meta.verbose_name_plural
-                ))
+                messages.success(
+                    request,
+                    f"Disconnected {count} {self.queryset.model._meta.verbose_name_plural}",
+                )
+
 
                 return redirect(return_url)
 
@@ -352,7 +354,7 @@ class SiteView(generic.ObjectView):
         asns = ASN.objects.restrict(request.user, 'view').filter(sites=instance)
         asn_count = asns.count()
 
-        stats.update({'asn_count': asn_count})
+        stats['asn_count'] = asn_count
 
         return {
             'stats': stats,
@@ -2431,7 +2433,10 @@ class DeviceBayPopulateView(generic.ObjectEditView):
 
             device_bay.installed_device = form.cleaned_data['installed_device']
             device_bay.save()
-            messages.success(request, "Added {} to {}.".format(device_bay.installed_device, device_bay))
+            messages.success(
+                request, f"Added {device_bay.installed_device} to {device_bay}."
+            )
+
             return_url = self.get_return_url(request)
 
             return redirect(return_url)

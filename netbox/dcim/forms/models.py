@@ -570,25 +570,29 @@ class DeviceForm(TenancyForm, NetBoxModelForm):
                 # Gather PKs of all interfaces belonging to this Device or a peer VirtualChassis member
                 interface_ids = self.instance.vc_interfaces(if_master=False).values_list('pk', flat=True)
 
-                # Collect interface IPs
-                interface_ips = IPAddress.objects.filter(
+                if interface_ips := IPAddress.objects.filter(
                     address__family=family,
-                    assigned_object_type=ContentType.objects.get_for_model(Interface),
-                    assigned_object_id__in=interface_ids
-                ).prefetch_related('assigned_object')
-                if interface_ips:
+                    assigned_object_type=ContentType.objects.get_for_model(
+                        Interface
+                    ),
+                    assigned_object_id__in=interface_ids,
+                ).prefetch_related('assigned_object'):
                     ip_list = [(ip.id, f'{ip.address} ({ip.assigned_object})') for ip in interface_ips]
                     ip_choices.append(('Interface IPs', ip_list))
-                # Collect NAT IPs
-                nat_ips = IPAddress.objects.prefetch_related('nat_inside').filter(
-                    address__family=family,
-                    nat_inside__assigned_object_type=ContentType.objects.get_for_model(Interface),
-                    nat_inside__assigned_object_id__in=interface_ids
-                ).prefetch_related('assigned_object')
-                if nat_ips:
+                if (
+                    nat_ips := IPAddress.objects.prefetch_related('nat_inside')
+                    .filter(
+                        address__family=family,
+                        nat_inside__assigned_object_type=ContentType.objects.get_for_model(
+                            Interface
+                        ),
+                        nat_inside__assigned_object_id__in=interface_ids,
+                    )
+                    .prefetch_related('assigned_object')
+                ):
                     ip_list = [(ip.id, f'{ip.address} (NAT)') for ip in nat_ips]
                     ip_choices.append(('NAT IPs', ip_list))
-                self.fields['primary_ip{}'.format(family)].choices = ip_choices
+                self.fields[f'primary_ip{family}'].choices = ip_choices
 
             # If editing an existing device, exclude it from the list of occupied rack units. This ensures that a device
             # can be flipped from one face to another.
@@ -609,9 +613,7 @@ class DeviceForm(TenancyForm, NetBoxModelForm):
             self.fields['primary_ip6'].choices = []
             self.fields['primary_ip6'].widget.attrs['readonly'] = True
 
-        # Rack position
-        position = self.data.get('position') or self.initial.get('position')
-        if position:
+        if position := self.data.get('position') or self.initial.get('position'):
             self.fields['position'].widget.choices = [(position, f'U{position}')]
 
 
@@ -923,8 +925,9 @@ class DeviceVCMembershipForm(forms.ModelForm):
             )
             if conflicting_members.exists():
                 raise forms.ValidationError(
-                    'A virtual chassis member already exists in position {}.'.format(vc_position)
+                    f'A virtual chassis member already exists in position {vc_position}.'
                 )
+
 
         return vc_position
 

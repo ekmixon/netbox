@@ -116,13 +116,14 @@ class ConfigRevisionAdmin(admin.ModelAdmin):
         config_version = get_config().version
         current_config = ConfigRevision.objects.filter(pk=config_version).first()
 
-        params = []
-        for param in PARAMS:
-            params.append((
+        params = [
+            (
                 param.name,
                 current_config.data.get(param.name, None),
-                candidate_config.data.get(param.name, None)
-            ))
+                candidate_config.data.get(param.name, None),
+            )
+            for param in PARAMS
+        ]
 
         context = self.admin_site.each_context(request)
         context.update({

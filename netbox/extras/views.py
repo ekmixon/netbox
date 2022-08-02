@@ -400,10 +400,11 @@ class ObjectChangeView(generic.ObjectView):
 
         if prechange_data and instance.postchange_data:
             diff_added = shallow_compare_dict(
-                prechange_data or dict(),
-                instance.postchange_data or dict(),
+                prechange_data or {},
+                instance.postchange_data or {},
                 exclude=['last_updated'],
             )
+
             diff_removed = {
                 x: prechange_data.get(x) for x in diff_added
             } if prechange_data else {}
@@ -531,7 +532,7 @@ class ReportListView(ContentTypePermissionRequiredMixin, View):
         for module, report_list in reports:
             module_reports = []
             for report in report_list:
-                report.result = results.get(report.full_name, None)
+                report.result = results.get(report.full_name)
                 module_reports.append(report)
             ret.append((module, module_reports))
 

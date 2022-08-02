@@ -13,7 +13,7 @@ EMPTY_VALUES = ('', None, [], ())
 
 class FormMetaclass(forms.models.ModelFormMetaclass):
 
-    def __new__(mcs, name, bases, attrs):
+    def __new__(cls, name, bases, attrs):
 
         # Emulate a declared field for each supported configuration parameter
         param_fields = {}
@@ -27,7 +27,7 @@ class FormMetaclass(forms.models.ModelFormMetaclass):
             param_fields[param.name] = param.field(**field_kwargs)
         attrs.update(param_fields)
 
-        return super().__new__(mcs, name, bases, attrs)
+        return super().__new__(cls, name, bases, attrs)
 
 
 class ConfigRevisionForm(forms.BaseModelForm, metaclass=FormMetaclass):
@@ -72,11 +72,9 @@ class ConfigRevisionForm(forms.BaseModelForm, metaclass=FormMetaclass):
         return instance
 
     def render_json(self):
-        json = {}
-
-        # Iterate through each field and populate non-empty values
-        for field_name in self.declared_fields:
-            if field_name in self.cleaned_data and self.cleaned_data[field_name] not in EMPTY_VALUES:
-                json[field_name] = self.cleaned_data[field_name]
-
-        return json
+        return {
+            field_name: self.cleaned_data[field_name]
+            for field_name in self.declared_fields
+            if field_name in self.cleaned_data
+            and self.cleaned_data[field_name] not in EMPTY_VALUES
+        }

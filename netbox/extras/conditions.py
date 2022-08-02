@@ -71,9 +71,7 @@ class Condition:
             value = None
         result = self.eval_func(value)
 
-        if self.negate:
-            return not result
-        return result
+        return not result if self.negate else result
 
     # Equivalency
 

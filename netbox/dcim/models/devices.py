@@ -289,18 +289,17 @@ class DeviceType(NetBoxModel):
                     exclude=[d.pk]
                 )
                 if d.position not in u_available:
-                    raise ValidationError({
-                        'u_height': "Device {} in rack {} does not have sufficient space to accommodate a height of "
-                                    "{}U".format(d, d.rack, self.u_height)
-                    })
+                    raise ValidationError(
+                        {
+                            'u_height': f"Device {d} in rack {d.rack} does not have sufficient space to accommodate a height of {self.u_height}U"
+                        }
+                    )
 
-        # If modifying the height of an existing DeviceType to 0U, check for any instances assigned to a rack position.
+
         elif self.pk and self._original_u_height > 0 and self.u_height == 0:
-            racked_instance_count = Device.objects.filter(
-                device_type=self,
-                position__isnull=False
-            ).count()
-            if racked_instance_count:
+            if racked_instance_count := Device.objects.filter(
+                device_type=self, position__isnull=False
+            ).count():
                 url = f"{reverse('dcim:device_list')}?manufactuer_id={self.manufacturer_id}&device_type_id={self.pk}"
                 raise ValidationError({
                     'u_height': mark_safe(
@@ -766,15 +765,17 @@ class Device(NetBoxModel, ConfigContextModel):
         # Check for a duplicate name on a device assigned to the same Site and no Tenant. This is necessary
         # because Django does not consider two NULL fields to be equal, and thus will not trigger a violation
         # of the uniqueness constraint without manual intervention.
-        if self.name and hasattr(self, 'site') and self.tenant is None:
-            if Device.objects.exclude(pk=self.pk).filter(
-                    name=self.name,
-                    site=self.site,
-                    tenant__isnull=True
-            ):
-                raise ValidationError({
-                    'name': 'A device with this name already exists.'
-                })
+        if (
+            self.name
+            and hasattr(self, 'site')
+            and self.tenant is None
+            and Device.objects.exclude(pk=self.pk).filter(
+                name=self.name, site=self.site, tenant__isnull=True
+            )
+        ):
+            raise ValidationError({
+                'name': 'A device with this name already exists.'
+            })
 
         super().validate_unique(exclude)
 
@@ -790,12 +791,13 @@ class Device(NetBoxModel, ConfigContextModel):
             raise ValidationError({
                 'location': f"Location {self.location} does not belong to site {self.site}.",
             })
-        if self.rack and self.location and self.rack.location != self.location:
-            raise ValidationError({
-                'rack': f"Rack {self.rack} does not belong to location {self.location}.",
-            })
-        elif self.rack:
-            self.location = self.rack.location
+        if self.rack:
+            if self.location and self.rack.location != self.location:
+                raise ValidationError({
+                    'rack': f"Rack {self.rack} does not belong to location {self.location}.",
+                })
+            else:
+                self.location = self.rack.location
 
         if self.rack is None:
             if self.face:
@@ -814,11 +816,14 @@ class Device(NetBoxModel, ConfigContextModel):
             })
 
         # Prevent 0U devices from being assigned to a specific position
-        if hasattr(self, 'device_type'):
-            if self.position and self.device_type.u_height == 0:
-                raise ValidationError({
-                    'position': f"A U0 device type ({self.device_type}) cannot be assigned to a rack position."
-                })
+        if (
+            hasattr(self, 'device_type')
+            and self.position
+            and self.device_type.u_height == 0
+        ):
+            raise ValidationError({
+                'position': f"A U0 device type ({self.device_type}) cannot be assigned to a rack position."
+            })
 
         if self.rack:
 
@@ -836,7 +841,7 @@ class Device(NetBoxModel, ConfigContextModel):
                     })
 
                 # Validate rack space
-                rack_face = self.face if not self.device_type.is_full_depth else None
+                rack_face = None if self.device_type.is_full_depth else self.face
                 exclude_list = [self.pk] if self.pk else []
                 available_units = self.rack.get_available_units(
                     u_height=self.device_type.u_height, rack_face=rack_face, exclude=exclude_list
@@ -859,9 +864,10 @@ class Device(NetBoxModel, ConfigContextModel):
                 })
             if self.primary_ip4.assigned_object in vc_interfaces:
                 pass
-            elif self.primary_ip4.nat_inside is not None and self.primary_ip4.nat_inside.assigned_object in vc_interfaces:
-                pass
-            else:
+            elif (
+                self.primary_ip4.nat_inside is None
+                or self.primary_ip4.nat_inside.assigned_object not in vc_interfaces
+            ):
                 raise ValidationError({
                     'primary_ip4': f"The specified IP address ({self.primary_ip4}) is not assigned to this device."
                 })
@@ -872,26 +878,34 @@ class Device(NetBoxModel, ConfigContextModel):
                 })
             if self.primary_ip6.assigned_object in vc_interfaces:
                 pass
-            elif self.primary_ip6.nat_inside is not None and self.primary_ip6.nat_inside.assigned_object in vc_interfaces:
-                pass
-            else:
+            elif (
+                self.primary_ip6.nat_inside is None
+                or self.primary_ip6.nat_inside.assigned_object not in vc_interfaces
+            ):
                 raise ValidationError({
                     'primary_ip6': f"The specified IP address ({self.primary_ip6}) is not assigned to this device."
                 })
 
         # Validate manufacturer/platform
-        if hasattr(self, 'device_type') and self.platform:
-            if self.platform.manufacturer and self.platform.manufacturer != self.device_type.manufacturer:
-                raise ValidationError({
-                    'platform': f"The assigned platform is limited to {self.platform.manufacturer} device types, but "
-                                f"this device's type belongs to {self.device_type.manufacturer}."
-                })
+        if (
+            hasattr(self, 'device_type')
+            and self.platform
+            and self.platform.manufacturer
+            and self.platform.manufacturer != self.device_type.manufacturer
+        ):
+            raise ValidationError({
+                'platform': f"The assigned platform is limited to {self.platform.manufacturer} device types, but "
+                            f"this device's type belongs to {self.device_type.manufacturer}."
+            })
 
         # A Device can only be assigned to a Cluster in the same Site (or no Site)
         if self.cluster and self.cluster.site is not None and self.cluster.site != self.site:
-            raise ValidationError({
-                'cluster': "The assigned cluster belongs to a different site ({})".format(self.cluster.site)
-            })
+            raise ValidationError(
+                {
+                    'cluster': f"The assigned cluster belongs to a different site ({self.cluster.site})"
+                }
+            )
+
 
         # Validate virtual chassis assignment
         if self.virtual_chassis and self.vc_position is None:
@@ -953,9 +967,7 @@ class Device(NetBoxModel, ConfigContextModel):
         """
         Return the device name if set; otherwise return the Device's primary key as {pk}
         """
-        if self.name is not None:
-            return self.name
-        return '{{{}}}'.format(self.pk)
+        return self.name if self.name is not None else '{{{}}}'.format(self.pk)
 
     @property
     def primary_ip(self):
@@ -1002,9 +1014,7 @@ class Device(NetBoxModel, ConfigContextModel):
             cable_pks += component_model.objects.filter(
                 device=self, cable__isnull=False
             ).values_list('cable', flat=True)
-        if pk_list:
-            return cable_pks
-        return Cable.objects.filter(pk__in=cable_pks)
+        return cable_pks if pk_list else Cable.objects.filter(pk__in=cable_pks)
 
     def get_children(self):
         """
@@ -1100,10 +1110,9 @@ class Module(NetBoxModel, ConfigContextModel):
                 template_instance = template.instantiate(device=self.device, module=self)
 
                 if adopt_components:
-                    existing_item = installed_components.get(template_instance.name)
-
-                    # Check if there's a component with the same name already
-                    if existing_item:
+                    if existing_item := installed_components.get(
+                        template_instance.name
+                    ):
                         # Assign it to the module
                         existing_item.module = self
                         update_instances.append(existing_item)
@@ -1162,14 +1171,9 @@ class VirtualChassis(NetBoxModel):
 
     def delete(self, *args, **kwargs):
 
-        # Check for LAG interfaces split across member chassis
-        interfaces = Interface.objects.filter(
-            device__in=self.members.all(),
-            lag__isnull=False
-        ).exclude(
-            lag__device=F('device')
-        )
-        if interfaces:
+        if interfaces := Interface.objects.filter(
+            device__in=self.members.all(), lag__isnull=False
+        ).exclude(lag__device=F('device')):
             raise ProtectedError(
                 f"Unable to delete virtual chassis {self}. There are member interfaces which form a cross-chassis LAG",
                 interfaces
